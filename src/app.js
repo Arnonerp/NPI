@@ -1,28 +1,47 @@
 const express = require('express');
-const mongoose = require('mongoose');
-require('dotenv').config();
+const userRoutes = require('./routes/userRoutes');
+const Logger = require('./utils/logger');
 
 const app = express();
 
-// Middleware to parse JSON
 app.use(express.json());
 
-// MongoDB Connection
-mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
-    .then(() => console.log('Connected to MongoDB'))
-    .catch(err => console.error('MongoDB connection error:', err));
+// Middleware to log incoming requests
+app.use(async (req, res, next) => {
+    const startTime = Date.now();
+    await Logger.info(`Incoming request: ${req.method} ${req.url}`, {
+        headers: req.headers,
+        body: req.body,
+    });
 
-// Example Route
+    res.on('finish', async () => {
+        const endTime = Date.now();
+        await Logger.info(`Response sent: ${req.method} ${req.url}`, {
+            statusCode: res.statusCode,
+            duration: `${endTime - startTime}ms`,
+        });
+    });
+
+    next();
+});
+
+// Default route to handle GET /
 app.get('/', (req, res) => {
-    res.send('Welcome to NPI!');
+    res.json({ message: 'Welcome to the NPI API!' });
 });
 
-// Step 7.3: Add user route
-const userRoutes = require('./routes/userRoutes'); // Import userRoutes
-app.use('/api/users', userRoutes); // Use the userRoutes for `/api/users` endpoint
+// User routes
+app.use('/api/users', userRoutes);
 
-// Start the Server
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+// Middleware to handle errors
+app.use(async (err, req, res, next) => {
+    await Logger.error(`Error: ${err.message}`, {
+        stack: err.stack,
+        method: req.method,
+        url: req.url,
+        body: req.body,
+    });
+    res.status(500).json({ error: 'Something went wrong!' });
 });
+
+module.exports = app;
