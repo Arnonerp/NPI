@@ -1,17 +1,20 @@
 const https = require('https');
 const fs = require('fs');
-const app = require('./app');
+const app = require('./app'); // Import your Express app instance
 
 const startHttpsServer = () => {
-    const HTTPS_PORT = process.env.HTTPS_PORT || 443;
+    const PORT = process.env.PORT; // Render's dynamic port
+    if (!PORT) {
+        throw new Error('Environment variable PORT is not set');
+    }
 
     const httpsOptions = {
         key: fs.readFileSync(process.env.SSL_KEY_PATH),
         cert: fs.readFileSync(process.env.SSL_CERT_PATH),
     };
 
-    https.createServer(httpsOptions, app).listen(HTTPS_PORT, () => {
-        console.log(`HTTPS server is running on https://localhost:${HTTPS_PORT}`);
+    https.createServer(httpsOptions, app).listen(PORT, () => {
+        console.log(`HTTPS Server is running on port ${PORT}`);
     });
 };
 
