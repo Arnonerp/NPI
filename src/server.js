@@ -1,6 +1,6 @@
 const { startHttpsServer } = require('./httpsServer');
 const { startHttpRedirect } = require('./httpRedirect');
-const { connectDB } = require('./db');
+const connectDB = require('./db');
 require('dotenv').config();
 
 const startServer = async () => {
